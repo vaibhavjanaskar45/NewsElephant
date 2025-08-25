@@ -1,0 +1,96 @@
+import React, { Component } from 'react';
+import NewsItem from './NewsItem';
+import Spinner from './Spinner';
+
+import PropTypes from 'prop-types'
+
+
+export class News extends Component {
+  
+  static defaultProps = {
+    country: 'in',
+    pageSize : 6
+  }
+  static propTypes = {
+    country: PropTypes.string,
+    pageSize : PropTypes.number,
+    category : PropTypes.string,
+  }
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      articles: [],
+      loading: false,
+      page: 1,
+      totalResults: 0
+    };
+    document.title = 
+    `NewsElephant | ${this.props.category}`
+    
+  }
+
+  async fetchNews(page) {
+    this.setState({ loading: true });
+    let url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&apikey=8c2b79d2137c48f6b69accba9790fc3d&page=${page}&pageSize=${this.props.pageSize}`;
+    let data = await fetch(url);
+    let parsedData = await data.json();
+    this.setState({
+      articles: parsedData.articles,
+      loading: false,
+      totalResults: parsedData.totalResults,
+      page: page
+    });
+  }
+
+  componentDidMount() {
+    this.fetchNews(this.state.page);
+  }
+
+  handleNext = () => {
+    if (this.state.page + 1 <= Math.ceil(this.state.totalResults / this.props.pageSize)) {
+      this.fetchNews(this.state.page + 1);
+    }
+  }
+
+  handlePrev = () => {
+    if (this.state.page > 1) {
+      this.fetchNews(this.state.page - 1);
+    }
+  }
+
+  render() {
+    return (
+      <div>
+        <div className="container mt-4">
+          <h3 className='text-center mb-3'>
+          NewsElephant: Top Headlines - {this.props.category}
+            </h3>
+          {this.state.loading && <Spinner />}
+          <div className='row'>
+            {!this.state.loading && this.state.articles.map((element) => {
+              return (
+                <div className='col-md-4 my-3' key={element.url}>
+                  <NewsItem title={element.title ? element.title : ""}
+                    description={element.description ? element.description.slice(0, 100) : ""}
+                    Imageurl={element.urlToImage ? element.urlToImage : "https://westernnews.media.clients.ellingtoncms.com/img/photos/2018/08/07/Breaking_news_red.jpg"}
+                    newsurl={element.url}
+                    author={element.author ? element.author : "Unknown"}
+                    date={element.publishedAt ? element.publishedAt : ""}
+                    source={element.source.name ? element.source.name : "Unknown"}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className='container d-flex justify-content-between mb-5'>
+          <button type="button" disabled={this.state.page <= 1} className="btn btn-outline-dark" onClick={this.handlePrev}>&#8592; Previous</button>
+          <button type="button" disabled={this.state.page + 1 > Math.ceil(this.state.totalResults / this.props.pageSize)} className="btn btn-outline-dark" onClick={this.handleNext}>Next &#8594;</button>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default News;
